@@ -3,11 +3,21 @@ import { prisma } from 'src/prisma.service';
 import { LoginUserDto, RegisterUserDto } from './dto';
 import { RpcException } from '@nestjs/microservices';
 import * as bycript from 'bcrypt'
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
 
     private readonly logger = new Logger('AuthService');
+
+    constructor(
+        private readonly jwtService: JwtService
+    ) { }
+
+    async signJWT(payload: JwtPayload) {
+        return this.jwtService.sign(payload);
+    }
 
     async registerUser(registerUserDto: RegisterUserDto) {
 
@@ -32,9 +42,11 @@ export class AuthService {
                 }
             })
 
+            const { password: _, ...result } = newUser;
+
             return {
-                user: newUser,
-                token: 'abc'
+                user: result,
+                token: await this.signJWT(result)
             }
 
         } catch (error) {
@@ -74,7 +86,7 @@ export class AuthService {
 
             return {
                 user: result,
-                token: 'abc'
+                token: await this.signJWT(result)
             }
 
         } catch (error) {
